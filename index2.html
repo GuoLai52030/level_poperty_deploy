@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>高级关卡随机分布编辑器</title>
+    <style>
+        :root { --bg: #0d0d0d; --card: #1a1a1a; --cyan: #00e5ff; --gold: #ff9f43; --border: #333; --text: #d1d1d1; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 15px; overflow: hidden; }
+        
+        .main-layout { display: grid; grid-template-columns: 360px 1fr; gap: 15px; height: 95vh; }
+        .side-panel { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; padding-bottom: 20px; }
+        .content-panel { background: var(--card); border-radius: 8px; border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+        
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 12px; }
+        h3 { color: var(--cyan); margin: 0 0 8px 0; font-size: 13px; border-left: 3px solid var(--cyan); padding-left: 8px; }
+        
+        .table-container { flex: 1; overflow: auto; padding: 10px; background: #000; }
+        table { width: 100%; border-collapse: collapse; border: 1px solid #444; }
+        th, td { border: 1px solid var(--border); padding: 4px; text-align: center; }
+        th { background: #222; font-size: 11px; position: sticky; top: 0; z-index: 10; }
+        
+        .row-input { background: transparent; border: 1px solid transparent; color: #fff; width: 100%; text-align: center; padding: 4px; font-size: 12px; box-sizing: border-box; }
+        .row-input:focus { border-color: var(--cyan); background: #111; outline: none; }
+        
+        input[type="number"], textarea { background: #000; color: #00ff41; border: 1px solid var(--border); padding: 5px; font-family: monospace; }
+        
+        .btn-gen { background: var(--cyan); color: #000; padding: 12px; width: 100%; margin: 10px 0; font-weight: bold; cursor: pointer; border: none; border-radius: 4px; }
+        .btn-add { background: #333; color: var(--cyan); border: 1px solid var(--cyan); padding: 3px 6px; font-size: 11px; cursor: pointer; }
+        
+        .q-Common { color: #888; } .q-Rare { color: #0070dd; } .q-Epic { color: #a335ee; } .q-Legendary { color: #ff8000; font-weight: bold; }
+        .manual-text { font-size: 11px; color: #888; line-height: 1.5; border-top: 1px solid #333; padding-top: 8px; }
+    </style>
+</head>
+<body>
+
+<div class="main-layout">
+    <div class="side-panel">
+        <div class="card">
+            <h3>1. 资源库配置</h3>
+            <textarea id="poolInput" style="width:100%; height:80px;">Item_Gold,Common
+Item_Exp,Common
+Item_Sword,Rare
+Item_Relic,Legendary</textarea>
+        </div>
+
+        <div class="card">
+            <h3>2. 局内总预算 (自动分布依据)</h3>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                <div><label style="font-size:10px;">房间总数:</label><input type="number" id="roomCount" value="5" style="width:100%"></div>
+                <div><label style="font-size:10px;">Common(绿)总数:</label><input type="number" id="b_Common" value="12" style="width:100%"></div>
+                <div><label style="font-size:10px;">Rare(蓝)总数:</label><input type="number" id="b_Rare" value="4" style="width:100%"></div>
+                <div><label style="font-size:10px;">Legendary(橙)总数:</label><input type="number" id="b_Legendary" value="1" style="width:100%"></div>
+            </div>
+            <p style="font-size:10px; color:#666; margin-top:5px;">* 生成时绿色数量随机(1-50)，其它品质固定为1。</p>
+        </div>
+
+        <button class="btn-gen" onclick="autoDistribute()">智能随机分布 (按预算生成)</button>
+
+        <div class="card">
+            <h3>3. 输出 JSON</h3>
+            <textarea id="jsonOutput" style="width:100%; height:100px;" readonly></textarea>
+            <button class="btn-add" style="width:100%; margin-top:5px;" onclick="copyJSON()">复制结果</button>
+        </div>
+
+        <div class="card manual-text">
+            <b>操作提示：</b><br>
+            - 点击<b>智能分布</b>会清空并重新按预算分配。<br>
+            - 你可以在右侧直接修改<b>数量(Qty)</b>，修改后生成 JSON 会保留你的值。<br>
+            - 绿色物品 Qty 支持 1-999，其余默认 1。
+        </div>
+    </div>
+
+    <div class="content-panel">
+        <div style="padding:10px; border-bottom:1px solid #333; display:flex; justify-content:space-between;">
+            <span style="color:var(--cyan); font-weight:bold;">关卡掉落内容编辑器</span>
+            <button class="btn-add" onclick="addManualRow()">+ 手动添加一行</button>
+        </div>
+        
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th width="80">房间 ID</th>
+                        <th width="100">交互物 ID</th>
+                        <th width="120">物品 ID</th>
+                        <th width="100">品质</th>
+                        <th width="70">数量(Qty)</th>
+                        <th width="40">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="mainBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentData = [];
+
+    // 核心功能：根据预算自动分布
+    function autoDistribute() {
+        const roomTotal = parseInt(document.getElementById('roomCount').value);
+        const budgets = {
+            Legendary: parseInt(document.getElementById('b_Legendary').value),
+            Rare: parseInt(document.getElementById('b_Rare').value),
+            Common: parseInt(document.getElementById('b_Common').value)
+        };
+
+        // 解析库
+        const poolRaw = document.getElementById('poolInput').value.trim().split('\n');
+        const pool = { Legendary: [], Rare: [], Common: [] };
+        poolRaw.forEach(line => {
+            const [id, q] = line.split(',').map(s => s.trim());
+            if(pool[q]) pool[q].push(id);
+        });
+
+        // 构造全局掉落池
+        let fullLootList = [];
+        for (const q in budgets) {
+            for (let i = 0; i < budgets[q]; i++) {
+                if(pool[q].length > 0) {
+                    const itemId = pool[q][Math.floor(Math.random()*pool[q].length)];
+                    // 绿色随机堆叠 1-50，其它固定 1
+                    const qty = (q === 'Common') ? Math.floor(Math.random() * 50) + 1 : 1;
+                    fullLootList.push({ itemId, quality: q, qty });
+                }
+            }
+        }
+        // 洗牌
+        fullLootList.sort(() => 0.5 - Math.random());
+
+        // 分配到房间
+        currentData = [];
+        for (let i = 1; i <= roomTotal; i++) {
+            // 每个房间随机分 1-3 个掉落物，直到抽完
+            const dropCount = Math.min(fullLootList.length, Math.floor(Math.random() * 2) + 1);
+            const targets = [];
+            for (let j = 0; j < dropCount; j++) {
+                const loot = fullLootList.pop();
+                currentData.push({
+                    room: i.toString(),
+                    target: (200 + i * 2 + j).toString(), // 自动生成交互物ID
+                    itemId: loot.itemId,
+                    quality: loot.quality,
+                    qty: loot.qty
+                });
+            }
+        }
+        renderTable();
+        updateJSON();
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('mainBody');
+        tbody.innerHTML = '';
+        currentData.forEach((row, idx) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><input class="row-input" value="${row.room}" onchange="updateRow(${idx},'room',this.value)"></td>
+                <td><input class="row-input" value="${row.target}" onchange="updateRow(${idx},'target',this.value)"></td>
+                <td><input class="row-input" value="${row.itemId}" onchange="updateRow(${idx},'itemId',this.value)"></td>
+                <td class="q-${row.quality}">${row.quality}</td>
+                <td><input type="number" class="row-input" value="${row.qty}" onchange="updateRow(${idx},'qty',this.value)"></td>
+                <td><button style="border:none;background:none;color:#555;cursor:pointer;" onclick="deleteRow(${idx})">×</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function updateRow(idx, key, val) {
+        currentData[idx][key] = key === 'qty' ? parseInt(val) : val;
+        updateJSON();
+    }
+
+    function deleteRow(idx) {
+        currentData.splice(idx, 1);
+        renderTable();
+        updateJSON();
+    }
+
+    function addManualRow() {
+        currentData.push({ room: "NEW", target: "999", itemId: "None", quality: "Common", qty: 1 });
+        renderTable();
+    }
+
+    function updateJSON() {
+        document.getElementById('jsonOutput').value = JSON.stringify(currentData, null, 2);
+    }
+
+    function copyJSON() {
+        const area = document.getElementById('jsonOutput');
+        area.select();
+        document.execCommand('copy');
+        alert("已复制到剪贴板");
+    }
+</script>
+</body>
+</html>
