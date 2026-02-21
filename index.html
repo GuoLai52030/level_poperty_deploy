@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>关卡配置宏观分布编辑器 V8 - 支持导出Excel</title>
+    <style>
+        :root { --bg: #0d0d0d; --card: #1a1a1a; --cyan: #00e5ff; --gold: #ff9f43; --border: #333; --text: #d1d1d1; --green: #32ff7e; --blue: #18dcff; --purple: #cd84f1; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 15px; height: 100vh; overflow: hidden; box-sizing: border-box; }
+        .main-layout { display: grid; grid-template-columns: 380px 1fr; gap: 15px; height: 100%; }
+        .side-panel { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; padding-right: 5px; }
+        .content-panel { background: var(--card); border-radius: 8px; border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 10px; }
+        h3 { color: var(--cyan); margin: 0 0 8px 0; font-size: 13px; border-left: 3px solid var(--cyan); padding-left: 8px; }
+        .table-container { flex: 1; overflow: auto; padding: 10px; background: #000; }
+        table { width: 100%; border-collapse: collapse; border: 2px solid #444; }
+        th, td { border: 1px solid var(--border); padding: 6px; text-align: center; }
+        th { background: #222; color: #aaa; font-size: 11px; position: sticky; top: 0; z-index: 10; }
+        .row-input { background: transparent; border: 1px transparent; color: #fff; width: 100%; text-align: center; padding: 4px; font-size: 12px; box-sizing: border-box; }
+        .row-input:hover { border-color: #555; background: #111; }
+        .row-input:focus { border-color: var(--cyan); background: #000; outline: none; }
+        textarea { width: 100%; background: #000; color: #00ff41; border: 1px solid var(--border); font-family: monospace; font-size: 11px; padding: 8px; box-sizing: border-box; }
+        input[type="number"] { width: 100%; background: #000; color: #fff; border: 1px solid #444; padding: 4px; box-sizing: border-box; }
+        .btn { cursor: pointer; border: none; border-radius: 4px; font-weight: bold; transition: 0.2s; }
+        .btn-gen { background: var(--cyan); color: #000; padding: 12px; width: 100%; font-size: 14px; margin-top: 5px; }
+        .btn-excel { background: var(--gold); color: #000; padding: 10px; width: 100%; font-size: 14px; margin-top: 5px; }
+        .btn-add { background: #333; color: var(--cyan); border: 1px solid var(--cyan); padding: 4px 8px; font-size: 10px; margin: 2px; }
+        .btn-del { color: #ff5555; background: transparent; font-size: 14px; cursor: pointer; border: none; }
+        .param-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 5px; }
+        .highlight-box { background: rgba(50, 255, 126, 0.1); border: 1px dashed var(--green); padding: 5px; border-radius: 4px; margin-bottom: 8px; }
+        .tabs { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+        .tab { background: #222; border: 1px solid #444; color: #888; padding: 4px 8px; font-size: 11px; cursor: pointer; border-radius: 3px; }
+        .tab.active { background: #000; border-color: var(--cyan); color: var(--cyan); }
+    </style>
+</head>
+<body>
+
+<div class="main-layout">
+    <div class="side-panel">
+        <div class="card">
+            <h3>1. 全局道具库 (ID, 品质)</h3>
+            <textarea id="poolInput" style="height: 60px;">Item_Gold,Common
+Item_Exp,Common
+Item_Key,Rare
+Item_Buff,Epic
+Item_Relic,Legendary</textarea>
+        </div>
+
+        <div class="card">
+            <h3>2. 宏观预算与导出</h3>
+            <div class="param-grid">
+                <div><label style="font-size:10px">总房间数</label><input type="number" id="p_rooms" value="5"></div>
+                <div><label style="font-size:10px">总交互物</label><input type="number" id="p_targets" value="8"></div>
+            </div>
+            <div class="highlight-box">
+                <div class="param-grid" style="margin-bottom:0;">
+                    <div><label style="font-size:10px;color:var(--green)">🟩绿坑位</label><input type="number" id="b_Common_Slots" value="24"></div>
+                    <div><label style="font-size:10px;color:var(--green)">💰绿总产出</label><input type="number" id="b_Common_TotalQty" value="198"></div>
+                </div>
+            </div>
+            <div class="param-grid">
+                <div><label style="font-size:10px">🟦蓝总数</label><input type="number" id="b_Rare" value="4"></div>
+                <div><label style="font-size:10px">🟪紫总数</label><input type="number" id="b_Epic" value="2"></div>
+            </div>
+            <label style="display:flex; align-items:center; font-size:11px; color:var(--gold); margin:5px 0; cursor:pointer;">
+                <input type="checkbox" id="lockTemplate" style="margin-right:5px; width:auto;"> 🔒 锁定房间与交互物分布模板
+            </label>
+            <button class="btn btn-gen" onclick="generateNewConfig()">🎲 生成随机配置</button>
+            <button class="btn btn-excel" onclick="exportToExcel()">📥 导出 Excel (CSV)</button>
+        </div>
+
+        <div class="card">
+            <h3>3. 方案存档</h3>
+            <div class="tabs" id="tabContainer"></div>
+        </div>
+
+        <div class="card">
+            <h3>4. JSON 预览</h3>
+            <textarea id="jsonOutput" style="height: 60px;" readonly></textarea>
+        </div>
+    </div>
+
+    <div class="content-panel">
+        <div style="padding:10px; border-bottom:1px solid #333; display:flex; justify-content:space-between; align-items:center;">
+            <span style="color:var(--cyan); font-weight:bold;" id="currentConfigName">当前配置：空</span>
+            <button class="btn btn-add" onclick="addRoom()">+ 添加新房间</button>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th width="15%">房间 ID</th>
+                        <th width="15%">交互物 ID</th>
+                        <th width="25%">物品 ID</th>
+                        <th width="20%">品质</th>
+                        <th width="15%">数量(Qty)</th>
+                        <th width="10%">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="mainBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    let configs = [];
+    let currentIndex = -1;
+    let configCounter = 0;
+
+    function getPool() {
+        const raw = document.getElementById('poolInput').value.trim().split('\n');
+        const pool = { Legendary: [], Epic: [], Rare: [], Common: [] };
+        raw.forEach(l => { const [id, q] = l.split(',').map(s=>s.trim()); if(pool[q]) pool[q].push(id); });
+        return pool;
+    }
+
+    function generateNewConfig() {
+        const numRooms = parseInt(document.getElementById('p_rooms').value);
+        const numTargets = parseInt(document.getElementById('p_targets').value);
+        if (numTargets < numRooms) return alert("可交互物不能小于房间数！");
+        const isLocked = document.getElementById('lockTemplate').checked;
+        const pool = getPool();
+        
+        let newStructure = [];
+        if (isLocked && configs[currentIndex]) {
+            configs[currentIndex].data.forEach(r => {
+                const newRoom = { roomId: r.roomId, targets: [] };
+                r.targets.forEach(t => { newRoom.targets.push({ id: t.id, slots: [] }); });
+                newStructure.push(newRoom);
+            });
+        } else {
+            let targetCounts = Array(numRooms).fill(1);
+            let remain = numTargets - numRooms;
+            while(remain > 0) { targetCounts[Math.floor(Math.random() * numRooms)]++; remain--; }
+            let targetGlobalId = 200;
+            targetCounts.forEach((count, idx) => {
+                let targets = [];
+                for(let i=0; i<count; i++) targets.push({ id: (targetGlobalId++).toString(), slots: [] });
+                newStructure.push({ roomId: (idx + 1).toString(), targets: targets });
+            });
+        }
+
+        let drops = [];
+        let greenSlots = parseInt(document.getElementById('b_Common_Slots').value) || 0;
+        let greenTotalQty = parseInt(document.getElementById('b_Common_TotalQty').value) || 0;
+        greenTotalQty = Math.max(greenTotalQty, greenSlots);
+        let greenQtys = new Array(greenSlots).fill(1);
+        let remainGreenQty = greenTotalQty - greenSlots;
+        while (remainGreenQty > 0) { greenQtys[Math.floor(Math.random() * greenSlots)]++; remainGreenQty--; }
+
+        for (let i = 0; i < greenSlots; i++) {
+            if(pool['Common'].length) drops.push({ lockId: pool['Common'][Math.floor(Math.random()*pool['Common'].length)], lockQ: 'Common', qty: greenQtys[i] });
+        }
+        const otherB = { Epic: parseInt(document.getElementById('b_Epic').value)||0, Rare: parseInt(document.getElementById('b_Rare').value)||0, Legendary: parseInt(document.getElementById('b_Legendary').value)||0 };
+        for (const q in otherB) {
+            for (let i = 0; i < otherB[q]; i++) if(pool[q].length) drops.push({ lockId: pool[q][Math.floor(Math.random()*pool[q].length)], lockQ: q, qty: 1 });
+        }
+        drops.sort(() => 0.5 - Math.random());
+
+        let flatTargets = [];
+        newStructure.forEach(r => r.targets.forEach(t => flatTargets.push(t)));
+        flatTargets.forEach(t => { if(drops.length) t.slots.push(drops.pop()); else t.slots.push({ lockId: "", lockQ: "Common", qty: 1 }); });
+        while(drops.length) flatTargets[Math.floor(Math.random()*flatTargets.length)].slots.push(drops.pop());
+
+        configCounter++;
+        configs.push({ name: `方案 ${configCounter}`, data: newStructure });
+        currentIndex = configs.length - 1;
+        renderTabs(); renderTable();
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('mainBody');
+        tbody.innerHTML = '';
+        if (currentIndex < 0 || !configs[currentIndex]) return;
+        const data = configs[currentIndex].data;
+        const flatForJson = [];
+
+        data.forEach((room, rIdx) => {
+            room.targets.forEach((target, tIdx) => {
+                target.slots.forEach((slot, sIdx) => {
+                    const tr = document.createElement('tr');
+                    if (tIdx === 0 && sIdx === 0) {
+                        const rSpan = room.targets.reduce((acc, t) => acc + t.slots.length, 0);
+                        tr.innerHTML += `<td rowspan="${rSpan}" style="background:#151515;"><input class="row-input" style="color:var(--gold)" value="${room.roomId}" onchange="updateData(${rIdx},null,null,'roomId',this.value)"></td>`;
+                    }
+                    if (sIdx === 0) {
+                        tr.innerHTML += `<td rowspan="${target.slots.length}"><input class="row-input" value="${target.id}" onchange="updateData(${rIdx},${tIdx},null,'targetId',this.value)"></td>`;
+                    }
+                    tr.innerHTML += `
+                        <td><input class="row-input" value="${slot.lockId}" onchange="updateData(${rIdx},${tIdx},${sIdx},'lockId',this.value)"></td>
+                        <td style="color:${slot.lockQ=='Common'?'var(--green)':(slot.lockQ=='Rare'?'var(--blue)':(slot.lockQ=='Epic'?'var(--purple)':'var(--gold)'))}">${slot.lockQ}</td>
+                        <td><input type="number" class="row-input" value="${slot.qty}" onchange="updateData(${rIdx},${tIdx},${sIdx},'qty',this.value)"></td>
+                        <td><button class="btn-del" onclick="removeSlot(${rIdx},${tIdx},${sIdx})">×</button></td>`;
+                    tbody.appendChild(tr);
+                    flatForJson.push({ 房间ID: room.roomId, 交互物ID: target.id, 物品ID: slot.lockId, 品质: slot.lockQ, 数量: slot.qty });
+                });
+            });
+        });
+        document.getElementById('jsonOutput').value = JSON.stringify(flatForJson, null, 2);
+    }
+
+    function exportToExcel() {
+        if (currentIndex < 0) return alert("请先生成配置！");
+        const json = JSON.parse(document.getElementById('jsonOutput').value);
+        if (!json.length) return;
+        
+        // CSV 表头
+        const headers = Object.keys(json[0]);
+        let csvContent = "\ufeff" + headers.join(",") + "\n"; // 添加BOM防止中文乱码
+        
+        // 填充行内容
+        json.forEach(row => {
+            csvContent += headers.map(h => `"${row[h] || ''}"`).join(",") + "\n";
+        });
+
+        // 触发下载
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `${configs[currentIndex].name}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // 基础功能
+    function updateData(rIdx, tIdx, sIdx, key, val) {
+        const d = configs[currentIndex].data;
+        if (key === 'roomId') d[rIdx].roomId = val;
+        else if (key === 'targetId') d[rIdx].targets[tIdx].id = val;
+        else d[rIdx].targets[tIdx].slots[sIdx][key] = (key==='qty' ? parseInt(val) : val);
+        renderTable();
+    }
+    function renderTabs() {
+        const c = document.getElementById('tabContainer'); c.innerHTML = '';
+        configs.forEach((conf, idx) => {
+            const tab = document.createElement('div');
+            tab.className = `tab ${idx === currentIndex ? 'active' : ''}`;
+            tab.innerHTML = `${conf.name} <span onclick="event.stopPropagation();configs.splice(${idx},1);currentIndex=configs.length-1;renderTabs();renderTable();">×</span>`;
+            tab.onclick = () => { currentIndex = idx; renderTabs(); renderTable(); };
+            c.appendChild(tab);
+        });
+        document.getElementById('currentConfigName').innerText = configs[currentIndex] ? configs[currentIndex].name : "空";
+    }
+    function addRoom() { configs[currentIndex].data.push({ roomId: "New", targets: [{ id: "200", slots: [{ lockId: "", lockQ: "Common", qty: 1 }] }] }); renderTable(); }
+    function removeSlot(rIdx, tIdx, sIdx) {
+        configs[currentIndex].data[rIdx].targets[tIdx].slots.splice(sIdx, 1);
+        renderTable();
+    }
+
+    generateNewConfig();
+</script>
+</body>
+</html>
