@@ -2,33 +2,49 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>高级关卡随机分布编辑器</title>
+    <title>关卡配置宏观分布编辑器 V6</title>
     <style>
-        :root { --bg: #0d0d0d; --card: #1a1a1a; --cyan: #00e5ff; --gold: #ff9f43; --border: #333; --text: #d1d1d1; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 15px; overflow: hidden; }
+        :root { --bg: #0d0d0d; --card: #1a1a1a; --cyan: #00e5ff; --gold: #ff9f43; --border: #333; --text: #d1d1d1; --green: #32ff7e; --blue: #18dcff; --purple: #cd84f1; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 15px; height: 100vh; overflow: hidden; box-sizing: border-box; }
         
-        .main-layout { display: grid; grid-template-columns: 360px 1fr; gap: 15px; height: 95vh; }
-        .side-panel { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; padding-bottom: 20px; }
+        .main-layout { display: grid; grid-template-columns: 360px 1fr; gap: 15px; height: 100%; }
+        .side-panel { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; padding-right: 5px; }
         .content-panel { background: var(--card); border-radius: 8px; border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
         
-        .card { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 12px; }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 10px; }
         h3 { color: var(--cyan); margin: 0 0 8px 0; font-size: 13px; border-left: 3px solid var(--cyan); padding-left: 8px; }
         
+        /* 表格样式 (保留图2层级结构) */
         .table-container { flex: 1; overflow: auto; padding: 10px; background: #000; }
-        table { width: 100%; border-collapse: collapse; border: 1px solid #444; }
-        th, td { border: 1px solid var(--border); padding: 4px; text-align: center; }
-        th { background: #222; font-size: 11px; position: sticky; top: 0; z-index: 10; }
+        table { width: 100%; border-collapse: collapse; border: 2px solid #444; }
+        th, td { border: 1px solid var(--border); padding: 6px; text-align: center; }
+        th { background: #222; color: #aaa; font-size: 11px; position: sticky; top: 0; z-index: 10; }
         
-        .row-input { background: transparent; border: 1px solid transparent; color: #fff; width: 100%; text-align: center; padding: 4px; font-size: 12px; box-sizing: border-box; }
-        .row-input:focus { border-color: var(--cyan); background: #111; outline: none; }
+        .row-input { background: transparent; border: 1px transparent; color: #fff; width: 100%; text-align: center; padding: 4px; font-size: 12px; box-sizing: border-box; }
+        .row-input:hover { border-color: #555; background: #111; }
+        .row-input:focus { border-color: var(--cyan); background: #000; outline: none; }
+        select.row-input { background: #111; }
         
-        input[type="number"], textarea { background: #000; color: #00ff41; border: 1px solid var(--border); padding: 5px; font-family: monospace; }
+        textarea { width: 100%; background: #000; color: #00ff41; border: 1px solid var(--border); font-family: monospace; font-size: 11px; padding: 8px; box-sizing: border-box; resize: vertical; }
+        input[type="number"] { width: 100%; background: #000; color: #fff; border: 1px solid #444; padding: 4px; box-sizing: border-box; }
         
-        .btn-gen { background: var(--cyan); color: #000; padding: 12px; width: 100%; margin: 10px 0; font-weight: bold; cursor: pointer; border: none; border-radius: 4px; }
-        .btn-add { background: #333; color: var(--cyan); border: 1px solid var(--cyan); padding: 3px 6px; font-size: 11px; cursor: pointer; }
+        .btn { cursor: pointer; border: none; border-radius: 4px; font-weight: bold; transition: 0.2s; }
+        .btn-gen { background: var(--cyan); color: #000; padding: 12px; width: 100%; font-size: 14px; margin-top: 5px; }
+        .btn-gen:hover { background: #00c4d9; }
+        .btn-add { background: #333; color: var(--cyan); border: 1px solid var(--cyan); padding: 4px 8px; font-size: 10px; margin: 2px; }
+        .btn-del { color: #ff5555; background: transparent; font-size: 14px; cursor: pointer; border: none; }
         
-        .q-Common { color: #888; } .q-Rare { color: #0070dd; } .q-Epic { color: #a335ee; } .q-Legendary { color: #ff8000; font-weight: bold; }
-        .manual-text { font-size: 11px; color: #888; line-height: 1.5; border-top: 1px solid #333; padding-top: 8px; }
+        .param-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 5px; align-items: center; }
+        .param-grid label { font-size: 11px; color: #aaa; }
+
+        /* 存档标签区 */
+        .tabs { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+        .tab { background: #222; border: 1px solid #444; color: #888; padding: 4px 8px; font-size: 11px; cursor: pointer; border-radius: 3px; }
+        .tab.active { background: #000; border-color: var(--cyan); color: var(--cyan); }
+        .tab-del { margin-left: 5px; color: #ff5555; cursor: pointer; }
+
+        .manual-text { font-size: 11px; color: #888; line-height: 1.5; }
+        .manual-text b { color: var(--gold); }
     </style>
 </head>
 <body>
@@ -36,56 +52,75 @@
 <div class="main-layout">
     <div class="side-panel">
         <div class="card">
-            <h3>1. 资源库配置</h3>
-            <textarea id="poolInput" style="width:100%; height:80px;">Item_Gold,Common
+            <h3>1. 全局道具库 (ID, 品质)</h3>
+            <textarea id="poolInput" style="height: 70px;">Item_Gold,Common
 Item_Exp,Common
-Item_Sword,Rare
+Item_Key,Rare
+Item_Buff,Epic
 Item_Relic,Legendary</textarea>
         </div>
 
         <div class="card">
-            <h3>2. 局内总预算 (自动分布依据)</h3>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-                <div><label style="font-size:10px;">房间总数:</label><input type="number" id="roomCount" value="5" style="width:100%"></div>
-                <div><label style="font-size:10px;">Common(绿)总数:</label><input type="number" id="b_Common" value="12" style="width:100%"></div>
-                <div><label style="font-size:10px;">Rare(蓝)总数:</label><input type="number" id="b_Rare" value="4" style="width:100%"></div>
-                <div><label style="font-size:10px;">Legendary(橙)总数:</label><input type="number" id="b_Legendary" value="1" style="width:100%"></div>
+            <h3>2. 单局宏观配置参数</h3>
+            <div class="param-grid">
+                <label>总房间数量:</label> <input type="number" id="p_rooms" value="5">
+                <label>总交互物数量:</label> <input type="number" id="p_targets" value="8">
             </div>
-            <p style="font-size:10px; color:#666; margin-top:5px;">* 生成时绿色数量随机(1-50)，其它品质固定为1。</p>
+            <div style="border-top: 1px solid #333; margin: 8px 0;"></div>
+            <div class="param-grid">
+                <label style="color:var(--green)">🟩 绿色掉落物总数:</label> <input type="number" id="b_Common" value="10">
+                <label style="color:var(--blue)">🟦 蓝色掉落物总数:</label> <input type="number" id="b_Rare" value="4">
+                <label style="color:var(--purple)">🟪 紫色掉落物总数:</label> <input type="number" id="b_Epic" value="2">
+                <label style="color:var(--gold)">🟧 橙色掉落物总数:</label> <input type="number" id="b_Legendary" value="1">
+            </div>
+            
+            <label style="display:flex; align-items:center; font-size:12px; color:var(--gold); margin-top:10px; cursor:pointer;">
+                <input type="checkbox" id="lockTemplate" style="margin-right:5px; width:auto;">
+                🔒 锁定当前(房间-交互物)数量分布模板
+            </label>
+            <button class="btn btn-gen" onclick="generateNewConfig()">🎲 一键随机生成配置</button>
         </div>
 
-        <button class="btn-gen" onclick="autoDistribute()">智能随机分布 (按预算生成)</button>
+        <div class="card">
+            <h3>3. 配置存档列表 (可多表对比)</h3>
+            <div class="tabs" id="tabContainer">
+                </div>
+        </div>
 
         <div class="card">
-            <h3>3. 输出 JSON</h3>
-            <textarea id="jsonOutput" style="width:100%; height:100px;" readonly></textarea>
-            <button class="btn-add" style="width:100%; margin-top:5px;" onclick="copyJSON()">复制结果</button>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3>4. JSON 实时输出</h3>
+                <button class="btn-add" onclick="copyJSON()">复制 JSON</button>
+            </div>
+            <textarea id="jsonOutput" style="height: 90px;" readonly></textarea>
         </div>
 
         <div class="card manual-text">
-            <b>操作提示：</b><br>
-            - 点击<b>智能分布</b>会清空并重新按预算分配。<br>
-            - 你可以在右侧直接修改<b>数量(Qty)</b>，修改后生成 JSON 会保留你的值。<br>
-            - 绿色物品 Qty 支持 1-999，其余默认 1。
+            <b>📖 使用说明 (与之前保持一致)：</b><br>
+            1. <b>固定模板：</b>勾选“锁定模板”后，再次点击生成，只会重新随机物品，房间和交互物的数量分布将固定不变（以当前显示的表为准）。<br>
+            2. <b>堆叠数量：</b>生成时，绿色物品数量(Qty)随机为 1-50，其它品质默认为 1。<br>
+            3. <b>改名与编辑：</b>右侧表格支持直接点击文字重命名房间ID/交互物ID，修改后自动同步JSON。部分房间固定掉落可直接手填覆写。
         </div>
     </div>
 
     <div class="content-panel">
-        <div style="padding:10px; border-bottom:1px solid #333; display:flex; justify-content:space-between;">
-            <span style="color:var(--cyan); font-weight:bold;">关卡掉落内容编辑器</span>
-            <button class="btn-add" onclick="addManualRow()">+ 手动添加一行</button>
+        <div style="padding:10px; border-bottom:1px solid #333; display:flex; justify-content:space-between; align-items:center;">
+            <span style="color:var(--cyan); font-weight:bold;" id="currentConfigName">当前配置：空</span>
+            <div>
+                <button class="btn btn-add" onclick="addRoom()">+ 添加新房间</button>
+            </div>
         </div>
         
         <div class="table-container">
             <table>
                 <thead>
                     <tr>
-                        <th width="80">房间 ID</th>
-                        <th width="100">交互物 ID</th>
-                        <th width="120">物品 ID</th>
-                        <th width="100">品质</th>
-                        <th width="70">数量(Qty)</th>
-                        <th width="40">操作</th>
+                        <th width="12%">房间 ID</th>
+                        <th width="15%">可交互物 ID</th>
+                        <th width="20%">物品 ID</th>
+                        <th width="20%">锁定品质</th>
+                        <th width="15%">单次数量(Qty)</th>
+                        <th width="10%">操作</th>
                     </tr>
                 </thead>
                 <tbody id="mainBody"></tbody>
@@ -95,104 +130,221 @@ Item_Relic,Legendary</textarea>
 </div>
 
 <script>
-    let currentData = [];
+    // 数据模型：configs 数组保存所有的随机方案
+    let configs = [];
+    let currentIndex = -1;
+    let configCounter = 0;
 
-    // 核心功能：根据预算自动分布
-    function autoDistribute() {
-        const roomTotal = parseInt(document.getElementById('roomCount').value);
+    // 获取并解析物品库
+    function getPool() {
+        const raw = document.getElementById('poolInput').value.trim().split('\n');
+        const pool = { Legendary: [], Epic: [], Rare: [], Common: [] };
+        raw.forEach(l => { const [id, q] = l.split(',').map(s=>s.trim()); if(pool[q]) pool[q].push(id); });
+        return pool;
+    }
+
+    // 核心算法：生成新的配置
+    function generateNewConfig() {
+        const numRooms = parseInt(document.getElementById('p_rooms').value);
+        const numTargets = parseInt(document.getElementById('p_targets').value);
+        if (numTargets < numRooms) return alert("可交互物总数不能小于房间总数！(至少每个房间1个)");
+
+        const isLocked = document.getElementById('lockTemplate').checked;
+        const pool = getPool();
+        
+        // 1. 生成或继承 骨架 (Rooms -> Targets)
+        let newStructure = [];
+        if (isLocked && configs[currentIndex]) {
+            // 继承当前选中的房间交互物分布
+            const curr = configs[currentIndex].data;
+            curr.forEach(r => {
+                const newRoom = { roomId: r.roomId, targets: [] };
+                r.targets.forEach(t => {
+                    newRoom.targets.push({ id: t.id, slots: [] }); // 清空掉落槽，保留骨架
+                });
+                newStructure.push(newRoom);
+            });
+        } else {
+            // 重新随机分布交互物
+            let targetCounts = Array(numRooms).fill(1); // 每房保底1个
+            let remain = numTargets - numRooms;
+            while(remain > 0) {
+                targetCounts[Math.floor(Math.random() * numRooms)]++;
+                remain--;
+            }
+            let targetGlobalId = 200;
+            targetCounts.forEach((count, idx) => {
+                let targets = [];
+                for(let i=0; i<count; i++) {
+                    targets.push({ id: (targetGlobalId++).toString(), slots: [] });
+                }
+                newStructure.push({ roomId: (idx + 1).toString(), targets: targets });
+            });
+        }
+
+        // 2. 准备掉落池 (扁平化)
+        let drops = [];
         const budgets = {
-            Legendary: parseInt(document.getElementById('b_Legendary').value),
-            Rare: parseInt(document.getElementById('b_Rare').value),
-            Common: parseInt(document.getElementById('b_Common').value)
+            Legendary: parseInt(document.getElementById('b_Legendary').value) || 0,
+            Epic: parseInt(document.getElementById('b_Epic').value) || 0,
+            Rare: parseInt(document.getElementById('b_Rare').value) || 0,
+            Common: parseInt(document.getElementById('b_Common').value) || 0
         };
 
-        // 解析库
-        const poolRaw = document.getElementById('poolInput').value.trim().split('\n');
-        const pool = { Legendary: [], Rare: [], Common: [] };
-        poolRaw.forEach(line => {
-            const [id, q] = line.split(',').map(s => s.trim());
-            if(pool[q]) pool[q].push(id);
-        });
-
-        // 构造全局掉落池
-        let fullLootList = [];
         for (const q in budgets) {
             for (let i = 0; i < budgets[q]; i++) {
-                if(pool[q].length > 0) {
-                    const itemId = pool[q][Math.floor(Math.random()*pool[q].length)];
-                    // 绿色随机堆叠 1-50，其它固定 1
+                if(pool[q] && pool[q].length > 0) {
+                    const item = pool[q][Math.floor(Math.random() * pool[q].length)];
+                    // 绿色堆叠1-50，其它固定1
                     const qty = (q === 'Common') ? Math.floor(Math.random() * 50) + 1 : 1;
-                    fullLootList.push({ itemId, quality: q, qty });
+                    drops.push({ lockId: item, lockQ: q, qty: qty });
                 }
             }
         }
-        // 洗牌
-        fullLootList.sort(() => 0.5 - Math.random());
+        drops.sort(() => 0.5 - Math.random()); // 洗牌
 
-        // 分配到房间
-        currentData = [];
-        for (let i = 1; i <= roomTotal; i++) {
-            // 每个房间随机分 1-3 个掉落物，直到抽完
-            const dropCount = Math.min(fullLootList.length, Math.floor(Math.random() * 2) + 1);
-            const targets = [];
-            for (let j = 0; j < dropCount; j++) {
-                const loot = fullLootList.pop();
-                currentData.push({
-                    room: i.toString(),
-                    target: (200 + i * 2 + j).toString(), // 自动生成交互物ID
-                    itemId: loot.itemId,
-                    quality: loot.quality,
-                    qty: loot.qty
-                });
-            }
+        // 3. 将掉落物塞进骨架的可交互物中
+        // 确保每个 Target 至少分到一个，剩下的全随机分
+        let flatTargets = [];
+        newStructure.forEach(r => r.targets.forEach(t => flatTargets.push(t)));
+        
+        // 先给每个 target 发1个保底
+        flatTargets.forEach(t => {
+            if(drops.length > 0) t.slots.push(drops.pop());
+            else t.slots.push({ lockId: "", lockQ: "Common", qty: 1 }); // 如果预算不够分，塞空壳
+        });
+        
+        // 剩下的随机发给任意 target
+        while(drops.length > 0) {
+            const randomTarget = flatTargets[Math.floor(Math.random() * flatTargets.length)];
+            randomTarget.slots.push(drops.pop());
         }
+
+        // 4. 保存为新配置
+        configCounter++;
+        const newConfig = {
+            name: `配置方案 ${configCounter}`,
+            data: newStructure
+        };
+        configs.push(newConfig);
+        currentIndex = configs.length - 1;
+        
+        renderTabs();
         renderTable();
-        updateJSON();
+    }
+
+    // --- UI 渲染逻辑 ---
+    function renderTabs() {
+        const c = document.getElementById('tabContainer');
+        c.innerHTML = '';
+        configs.forEach((conf, idx) => {
+            const tab = document.createElement('div');
+            tab.className = `tab ${idx === currentIndex ? 'active' : ''}`;
+            tab.innerHTML = `${conf.name} <span class="tab-del" onclick="event.stopPropagation(); deleteConfig(${idx})">×</span>`;
+            tab.onclick = () => { currentIndex = idx; renderTabs(); renderTable(); };
+            c.appendChild(tab);
+        });
+        document.getElementById('currentConfigName').innerText = configs[currentIndex] ? configs[currentIndex].name : "当前配置：空";
+    }
+
+    function deleteConfig(idx) {
+        configs.splice(idx, 1);
+        if (currentIndex >= configs.length) currentIndex = configs.length - 1;
+        renderTabs();
+        renderTable();
     }
 
     function renderTable() {
         const tbody = document.getElementById('mainBody');
         tbody.innerHTML = '';
-        currentData.forEach((row, idx) => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><input class="row-input" value="${row.room}" onchange="updateRow(${idx},'room',this.value)"></td>
-                <td><input class="row-input" value="${row.target}" onchange="updateRow(${idx},'target',this.value)"></td>
-                <td><input class="row-input" value="${row.itemId}" onchange="updateRow(${idx},'itemId',this.value)"></td>
-                <td class="q-${row.quality}">${row.quality}</td>
-                <td><input type="number" class="row-input" value="${row.qty}" onchange="updateRow(${idx},'qty',this.value)"></td>
-                <td><button style="border:none;background:none;color:#555;cursor:pointer;" onclick="deleteRow(${idx})">×</button></td>
-            `;
-            tbody.appendChild(tr);
+        if (currentIndex < 0 || !configs[currentIndex]) {
+            document.getElementById('jsonOutput').value = '';
+            return;
+        }
+
+        const data = configs[currentIndex].data;
+        const jsonOutput = [];
+
+        data.forEach((room, rIdx) => {
+            room.targets.forEach((target, tIdx) => {
+                target.slots.forEach((slot, sIdx) => {
+                    const tr = document.createElement('tr');
+                    
+                    if (tIdx === 0 && sIdx === 0) {
+                        const rSpan = room.targets.reduce((acc, t) => acc + t.slots.length, 0);
+                        tr.innerHTML += `<td rowspan="${rSpan}" style="background:#151515;">
+                            <input class="row-input" style="font-weight:bold; color:var(--gold);" value="${room.roomId}" onchange="updateData(${rIdx},null,null,'roomId',this.value)">
+                            <br><button class="btn-add" onclick="addTarget(${rIdx})">+交互物</button>
+                        </td>`;
+                    }
+
+                    if (sIdx === 0) {
+                        tr.innerHTML += `<td rowspan="${target.slots.length}">
+                            <input class="row-input" value="${target.id}" onchange="updateData(${rIdx},${tIdx},null,'targetId',this.value)">
+                            <button class="btn-add" onclick="addSlot(${rIdx},${tIdx})">+物品</button>
+                        </td>`;
+                    }
+
+                    // 品质颜色辅助
+                    let qColor = "#fff";
+                    if(slot.lockQ === 'Common') qColor = "var(--green)";
+                    if(slot.lockQ === 'Rare') qColor = "var(--blue)";
+                    if(slot.lockQ === 'Epic') qColor = "var(--purple)";
+                    if(slot.lockQ === 'Legendary') qColor = "var(--gold)";
+
+                    tr.innerHTML += `
+                        <td><input class="row-input" placeholder="随机分配" value="${slot.lockId}" onchange="updateData(${rIdx},${tIdx},${sIdx},'lockId',this.value)"></td>
+                        <td>
+                            <select class="row-input" style="color:${qColor}" onchange="updateData(${rIdx},${tIdx},${sIdx},'lockQ',this.value)">
+                                <option value="" ${slot.lockQ==''?'selected':''}>不限</option>
+                                <option value="Legendary" ${slot.lockQ=='Legendary'?'selected':''}>Legendary</option>
+                                <option value="Epic" ${slot.lockQ=='Epic'?'selected':''}>Epic</option>
+                                <option value="Rare" ${slot.lockQ=='Rare'?'selected':''}>Rare</option>
+                                <option value="Common" ${slot.lockQ=='Common'?'selected':''}>Common</option>
+                            </select>
+                        </td>
+                        <td><input type="number" class="row-input" value="${slot.qty}" onchange="updateData(${rIdx},${tIdx},${sIdx},'qty',this.value)"></td>
+                        <td><button class="btn-del" onclick="removeSlot(${rIdx},${tIdx},${sIdx})">×</button></td>
+                    `;
+                    tbody.appendChild(tr);
+
+                    // 收集用于 JSON
+                    jsonOutput.push({ Room: room.roomId, Target: target.id, Item: slot.lockId, Quality: slot.lockQ, Qty: slot.qty });
+                });
+            });
         });
+
+        document.getElementById('jsonOutput').value = JSON.stringify(jsonOutput, null, 2);
     }
 
-    function updateRow(idx, key, val) {
-        currentData[idx][key] = key === 'qty' ? parseInt(val) : val;
-        updateJSON();
+    // --- 数据手动编辑方法 ---
+    function updateData(rIdx, tIdx, sIdx, key, val) {
+        if (!configs[currentIndex]) return;
+        const d = configs[currentIndex].data;
+        if (key === 'roomId') d[rIdx].roomId = val;
+        else if (key === 'targetId') d[rIdx].targets[tIdx].id = val;
+        else d[rIdx].targets[tIdx].slots[sIdx][key] = (key==='qty' ? parseInt(val) : val);
+        renderTable(); // 触发重新渲染和JSON同步
     }
 
-    function deleteRow(idx) {
-        currentData.splice(idx, 1);
-        renderTable();
-        updateJSON();
-    }
-
-    function addManualRow() {
-        currentData.push({ room: "NEW", target: "999", itemId: "None", quality: "Common", qty: 1 });
-        renderTable();
-    }
-
-    function updateJSON() {
-        document.getElementById('jsonOutput').value = JSON.stringify(currentData, null, 2);
+    function addRoom() { if(!configs[currentIndex]) return; configs[currentIndex].data.push({ roomId: "New", targets: [{ id: "NEW", slots: [{ lockId: "", lockQ: "Common", qty: 1 }] }] }); renderTable(); }
+    function addTarget(rIdx) { configs[currentIndex].data[rIdx].targets.push({ id: "NEW", slots: [{ lockId: "", lockQ: "Common", qty: 1 }] }); renderTable(); }
+    function addSlot(rIdx, tIdx) { configs[currentIndex].data[rIdx].targets[tIdx].slots.push({ lockId: "", lockQ: "Common", qty: 1 }); renderTable(); }
+    function removeSlot(rIdx, tIdx, sIdx) { 
+        configs[currentIndex].data[rIdx].targets[tIdx].slots.splice(sIdx, 1);
+        if(configs[currentIndex].data[rIdx].targets[tIdx].slots.length === 0) configs[currentIndex].data[rIdx].targets.splice(tIdx, 1);
+        if(configs[currentIndex].data[rIdx].targets.length === 0) configs[currentIndex].data.splice(rIdx, 1);
+        renderTable(); 
     }
 
     function copyJSON() {
         const area = document.getElementById('jsonOutput');
         area.select();
         document.execCommand('copy');
-        alert("已复制到剪贴板");
     }
+
+    // 初始化跑一次
+    generateNewConfig();
 </script>
 </body>
 </html>
