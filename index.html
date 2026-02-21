@@ -2,34 +2,51 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>关卡配置宏观分布编辑器 V8 - 支持导出Excel</title>
+    <title>关卡配置宏观分布编辑器 V8</title>
     <style>
         :root { --bg: #0d0d0d; --card: #1a1a1a; --cyan: #00e5ff; --gold: #ff9f43; --border: #333; --text: #d1d1d1; --green: #32ff7e; --blue: #18dcff; --purple: #cd84f1; }
         body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 15px; height: 100vh; overflow: hidden; box-sizing: border-box; }
+        
         .main-layout { display: grid; grid-template-columns: 380px 1fr; gap: 15px; height: 100%; }
         .side-panel { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; padding-right: 5px; }
         .content-panel { background: var(--card); border-radius: 8px; border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+        
         .card { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 10px; }
         h3 { color: var(--cyan); margin: 0 0 8px 0; font-size: 13px; border-left: 3px solid var(--cyan); padding-left: 8px; }
+        
         .table-container { flex: 1; overflow: auto; padding: 10px; background: #000; }
         table { width: 100%; border-collapse: collapse; border: 2px solid #444; }
         th, td { border: 1px solid var(--border); padding: 6px; text-align: center; }
         th { background: #222; color: #aaa; font-size: 11px; position: sticky; top: 0; z-index: 10; }
+        
         .row-input { background: transparent; border: 1px transparent; color: #fff; width: 100%; text-align: center; padding: 4px; font-size: 12px; box-sizing: border-box; }
         .row-input:hover { border-color: #555; background: #111; }
         .row-input:focus { border-color: var(--cyan); background: #000; outline: none; }
-        textarea { width: 100%; background: #000; color: #00ff41; border: 1px solid var(--border); font-family: monospace; font-size: 11px; padding: 8px; box-sizing: border-box; }
+        select.row-input { background: #111; }
+        
+        textarea { width: 100%; background: #000; color: #00ff41; border: 1px solid var(--border); font-family: monospace; font-size: 11px; padding: 8px; box-sizing: border-box; resize: vertical; }
         input[type="number"] { width: 100%; background: #000; color: #fff; border: 1px solid #444; padding: 4px; box-sizing: border-box; }
+        
         .btn { cursor: pointer; border: none; border-radius: 4px; font-weight: bold; transition: 0.2s; }
         .btn-gen { background: var(--cyan); color: #000; padding: 12px; width: 100%; font-size: 14px; margin-top: 5px; }
-        .btn-excel { background: var(--gold); color: #000; padding: 10px; width: 100%; font-size: 14px; margin-top: 5px; }
+        .btn-gen:hover { background: #00c4d9; }
         .btn-add { background: #333; color: var(--cyan); border: 1px solid var(--cyan); padding: 4px 8px; font-size: 10px; margin: 2px; }
         .btn-del { color: #ff5555; background: transparent; font-size: 14px; cursor: pointer; border: none; }
-        .param-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 5px; }
-        .highlight-box { background: rgba(50, 255, 126, 0.1); border: 1px dashed var(--green); padding: 5px; border-radius: 4px; margin-bottom: 8px; }
+        /* 导出按钮专属样式 */
+        .btn-excel { background: var(--green); color: #000; padding: 10px; width: 100%; font-size: 13px; margin-top: 5px; }
+        
+        .param-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 5px; align-items: center; }
+        .param-grid label { font-size: 11px; color: #aaa; }
+
         .tabs { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
         .tab { background: #222; border: 1px solid #444; color: #888; padding: 4px 8px; font-size: 11px; cursor: pointer; border-radius: 3px; }
         .tab.active { background: #000; border-color: var(--cyan); color: var(--cyan); }
+        .tab-del { margin-left: 5px; color: #ff5555; cursor: pointer; }
+
+        .manual-text { font-size: 11px; color: #888; line-height: 1.5; }
+        .manual-text b { color: var(--gold); }
+        
+        .highlight-box { background: rgba(50, 255, 126, 0.1); border: 1px dashed var(--green); padding: 5px; border-radius: 4px; margin-bottom: 8px; }
     </style>
 </head>
 <body>
@@ -46,36 +63,53 @@ Item_Relic,Legendary</textarea>
         </div>
 
         <div class="card">
-            <h3>2. 宏观预算与导出</h3>
+            <h3>2. 单局宏观配置与经济预算</h3>
             <div class="param-grid">
-                <div><label style="font-size:10px">总房间数</label><input type="number" id="p_rooms" value="5"></div>
-                <div><label style="font-size:10px">总交互物</label><input type="number" id="p_targets" value="8"></div>
+                <label>总房间数量:</label> <input type="number" id="p_rooms" value="5">
+                <label>总交互物数量:</label> <input type="number" id="p_targets" value="8">
             </div>
+            
+            <div style="border-top: 1px solid #333; margin: 8px 0;"></div>
+            
             <div class="highlight-box">
                 <div class="param-grid" style="margin-bottom:0;">
-                    <div><label style="font-size:10px;color:var(--green)">🟩绿坑位</label><input type="number" id="b_Common_Slots" value="24"></div>
-                    <div><label style="font-size:10px;color:var(--green)">💰绿总产出</label><input type="number" id="b_Common_TotalQty" value="198"></div>
+                    <label style="color:var(--green)">🟩 绿色掉落坑位数:</label> <input type="number" id="b_Common_Slots" value="24">
+                    <label style="color:var(--green)">💰 绿色总产出量:</label> <input type="number" id="b_Common_TotalQty" value="198">
                 </div>
             </div>
+
             <div class="param-grid">
-                <div><label style="font-size:10px">🟦蓝总数</label><input type="number" id="b_Rare" value="4"></div>
-                <div><label style="font-size:10px">🟪紫总数</label><input type="number" id="b_Epic" value="2"></div>
+                <label style="color:var(--blue)">🟦 蓝色掉落物总数:</label> <input type="number" id="b_Rare" value="4">
+                <label style="color:var(--purple)">🟪 紫色掉落物总数:</label> <input type="number" id="b_Epic" value="2">
+                <label style="color:var(--gold)">🟧 橙色掉落物总数:</label> <input type="number" id="b_Legendary" value="1">
             </div>
-            <label style="display:flex; align-items:center; font-size:11px; color:var(--gold); margin:5px 0; cursor:pointer;">
-                <input type="checkbox" id="lockTemplate" style="margin-right:5px; width:auto;"> 🔒 锁定房间与交互物分布模板
+            
+            <label style="display:flex; align-items:center; font-size:12px; color:var(--gold); margin-top:10px; cursor:pointer;">
+                <input type="checkbox" id="lockTemplate" style="margin-right:5px; width:auto;">
+                🔒 锁定当前房间与交互物数量模板
             </label>
-            <button class="btn btn-gen" onclick="generateNewConfig()">🎲 生成随机配置</button>
-            <button class="btn btn-excel" onclick="exportToExcel()">📥 导出 Excel (CSV)</button>
+            <button class="btn btn-gen" onclick="generateNewConfig()">🎲 一键随机生成配置</button>
         </div>
 
         <div class="card">
-            <h3>3. 方案存档</h3>
+            <h3>3. 方案存档列表</h3>
             <div class="tabs" id="tabContainer"></div>
         </div>
 
         <div class="card">
-            <h3>4. JSON 预览</h3>
-            <textarea id="jsonOutput" style="height: 60px;" readonly></textarea>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3>4. 数据导出</h3>
+                <button class="btn-add" onclick="copyJSON()">复制 JSON</button>
+            </div>
+            <textarea id="jsonOutput" style="height: 70px; margin-bottom:10px;" readonly></textarea>
+            <button class="btn btn-excel" onclick="exportToExcel()">📊 导出为 Excel (CSV)</button>
+        </div>
+
+        <div class="card manual-text">
+            <b>📖 完整功能说明：</b><br>
+            1. <b>经济总量切分：</b>绿色物品的总数会随机分摊到指定的“坑位数”中，总和固定。<br>
+            2. <b>导出 Excel：</b>点击上方绿色按钮，可直接下载 .csv 文件，用 Excel 或 WPS 打开即可。<br>
+            3. <b>锁定模板：</b>勾选后再次生成，将保留当前表格的房间 ID 和交互物结构，仅刷新物品。
         </div>
     </div>
 
@@ -84,15 +118,16 @@ Item_Relic,Legendary</textarea>
             <span style="color:var(--cyan); font-weight:bold;" id="currentConfigName">当前配置：空</span>
             <button class="btn btn-add" onclick="addRoom()">+ 添加新房间</button>
         </div>
+        
         <div class="table-container">
             <table>
                 <thead>
                     <tr>
-                        <th width="15%">房间 ID</th>
-                        <th width="15%">交互物 ID</th>
-                        <th width="25%">物品 ID</th>
-                        <th width="20%">品质</th>
-                        <th width="15%">数量(Qty)</th>
+                        <th width="12%">房间 ID</th>
+                        <th width="15%">可交互物 ID</th>
+                        <th width="20%">物品 ID</th>
+                        <th width="20%">锁定品质</th>
+                        <th width="15%">单次数量(Qty)</th>
                         <th width="10%">操作</th>
                     </tr>
                 </thead>
@@ -117,13 +152,15 @@ Item_Relic,Legendary</textarea>
     function generateNewConfig() {
         const numRooms = parseInt(document.getElementById('p_rooms').value);
         const numTargets = parseInt(document.getElementById('p_targets').value);
-        if (numTargets < numRooms) return alert("可交互物不能小于房间数！");
+        if (numTargets < numRooms) return alert("可交互物总数不能小于房间总数！");
+
         const isLocked = document.getElementById('lockTemplate').checked;
         const pool = getPool();
         
         let newStructure = [];
         if (isLocked && configs[currentIndex]) {
-            configs[currentIndex].data.forEach(r => {
+            const curr = configs[currentIndex].data;
+            curr.forEach(r => {
                 const newRoom = { roomId: r.roomId, targets: [] };
                 r.targets.forEach(t => { newRoom.targets.push({ id: t.id, slots: [] }); });
                 newStructure.push(newRoom);
@@ -144,109 +181,201 @@ Item_Relic,Legendary</textarea>
         let greenSlots = parseInt(document.getElementById('b_Common_Slots').value) || 0;
         let greenTotalQty = parseInt(document.getElementById('b_Common_TotalQty').value) || 0;
         greenTotalQty = Math.max(greenTotalQty, greenSlots);
+        
         let greenQtys = new Array(greenSlots).fill(1);
         let remainGreenQty = greenTotalQty - greenSlots;
-        while (remainGreenQty > 0) { greenQtys[Math.floor(Math.random() * greenSlots)]++; remainGreenQty--; }
+        while (remainGreenQty > 0) {
+            let randomIdx = Math.floor(Math.random() * greenSlots);
+            greenQtys[randomIdx]++;
+            remainGreenQty--;
+        }
 
         for (let i = 0; i < greenSlots; i++) {
-            if(pool['Common'].length) drops.push({ lockId: pool['Common'][Math.floor(Math.random()*pool['Common'].length)], lockQ: 'Common', qty: greenQtys[i] });
+            if(pool['Common'] && pool['Common'].length > 0) {
+                const item = pool['Common'][Math.floor(Math.random() * pool['Common'].length)];
+                drops.push({ lockId: item, lockQ: 'Common', qty: greenQtys[i] });
+            }
         }
-        const otherB = { Epic: parseInt(document.getElementById('b_Epic').value)||0, Rare: parseInt(document.getElementById('b_Rare').value)||0, Legendary: parseInt(document.getElementById('b_Legendary').value)||0 };
-        for (const q in otherB) {
-            for (let i = 0; i < otherB[q]; i++) if(pool[q].length) drops.push({ lockId: pool[q][Math.floor(Math.random()*pool[q].length)], lockQ: q, qty: 1 });
+
+        const otherBudgets = {
+            Epic: parseInt(document.getElementById('b_Epic').value) || 0,
+            Rare: parseInt(document.getElementById('b_Rare').value) || 0,
+            Legendary: parseInt(document.getElementById('b_Legendary').value) || 0
+        };
+
+        for (const q in otherBudgets) {
+            for (let i = 0; i < otherBudgets[q]; i++) {
+                if(pool[q] && pool[q].length > 0) {
+                    const item = pool[q][Math.floor(Math.random() * pool[q].length)];
+                    drops.push({ lockId: item, lockQ: q, qty: 1 });
+                }
+            }
         }
+        
         drops.sort(() => 0.5 - Math.random());
 
         let flatTargets = [];
         newStructure.forEach(r => r.targets.forEach(t => flatTargets.push(t)));
-        flatTargets.forEach(t => { if(drops.length) t.slots.push(drops.pop()); else t.slots.push({ lockId: "", lockQ: "Common", qty: 1 }); });
-        while(drops.length) flatTargets[Math.floor(Math.random()*flatTargets.length)].slots.push(drops.pop());
+        
+        flatTargets.forEach(t => {
+            if(drops.length > 0) t.slots.push(drops.pop());
+            else t.slots.push({ lockId: "", lockQ: "Common", qty: 1 }); 
+        });
+        
+        while(drops.length > 0) {
+            const randomTarget = flatTargets[Math.floor(Math.random() * flatTargets.length)];
+            randomTarget.slots.push(drops.pop());
+        }
 
         configCounter++;
-        configs.push({ name: `方案 ${configCounter}`, data: newStructure });
+        configs.push({ name: `配置方案 ${configCounter}`, data: newStructure });
         currentIndex = configs.length - 1;
-        renderTabs(); renderTable();
+        
+        renderTabs();
+        renderTable();
+    }
+
+    function renderTabs() {
+        const c = document.getElementById('tabContainer');
+        c.innerHTML = '';
+        configs.forEach((conf, idx) => {
+            const tab = document.createElement('div');
+            tab.className = `tab ${idx === currentIndex ? 'active' : ''}`;
+            tab.innerHTML = `${conf.name} <span class="tab-del" onclick="event.stopPropagation(); deleteConfig(${idx})">×</span>`;
+            tab.onclick = () => { currentIndex = idx; renderTabs(); renderTable(); };
+            c.appendChild(tab);
+        });
+        document.getElementById('currentConfigName').innerText = configs[currentIndex] ? configs[currentIndex].name : "当前配置：空";
+    }
+
+    function deleteConfig(idx) {
+        configs.splice(idx, 1);
+        if (currentIndex >= configs.length) currentIndex = configs.length - 1;
+        renderTabs();
+        renderTable();
     }
 
     function renderTable() {
         const tbody = document.getElementById('mainBody');
         tbody.innerHTML = '';
-        if (currentIndex < 0 || !configs[currentIndex]) return;
+        if (currentIndex < 0 || !configs[currentIndex]) {
+            document.getElementById('jsonOutput').value = '';
+            return;
+        }
+
         const data = configs[currentIndex].data;
-        const flatForJson = [];
+        const jsonOutput = [];
 
         data.forEach((room, rIdx) => {
             room.targets.forEach((target, tIdx) => {
                 target.slots.forEach((slot, sIdx) => {
                     const tr = document.createElement('tr');
+                    
                     if (tIdx === 0 && sIdx === 0) {
                         const rSpan = room.targets.reduce((acc, t) => acc + t.slots.length, 0);
-                        tr.innerHTML += `<td rowspan="${rSpan}" style="background:#151515;"><input class="row-input" style="color:var(--gold)" value="${room.roomId}" onchange="updateData(${rIdx},null,null,'roomId',this.value)"></td>`;
+                        tr.innerHTML += `<td rowspan="${rSpan}" style="background:#151515;">
+                            <input class="row-input" style="font-weight:bold; color:var(--gold);" value="${room.roomId}" onchange="updateData(${rIdx},null,null,'roomId',this.value)">
+                            <br><button class="btn-add" onclick="addTarget(${rIdx})">+交互物</button>
+                        </td>`;
                     }
+
                     if (sIdx === 0) {
-                        tr.innerHTML += `<td rowspan="${target.slots.length}"><input class="row-input" value="${target.id}" onchange="updateData(${rIdx},${tIdx},null,'targetId',this.value)"></td>`;
+                        tr.innerHTML += `<td rowspan="${target.slots.length}">
+                            <input class="row-input" value="${target.id}" onchange="updateData(${rIdx},${tIdx},null,'targetId',this.value)">
+                            <button class="btn-add" onclick="addSlot(${rIdx},${tIdx})">+物品</button>
+                        </td>`;
                     }
+
+                    let qColor = "#fff";
+                    if(slot.lockQ === 'Common') qColor = "var(--green)";
+                    if(slot.lockQ === 'Rare') qColor = "var(--blue)";
+                    if(slot.lockQ === 'Epic') qColor = "var(--purple)";
+                    if(slot.lockQ === 'Legendary') qColor = "var(--gold)";
+
                     tr.innerHTML += `
-                        <td><input class="row-input" value="${slot.lockId}" onchange="updateData(${rIdx},${tIdx},${sIdx},'lockId',this.value)"></td>
-                        <td style="color:${slot.lockQ=='Common'?'var(--green)':(slot.lockQ=='Rare'?'var(--blue)':(slot.lockQ=='Epic'?'var(--purple)':'var(--gold)'))}">${slot.lockQ}</td>
+                        <td><input class="row-input" placeholder="随机分配" value="${slot.lockId}" onchange="updateData(${rIdx},${tIdx},${sIdx},'lockId',this.value)"></td>
+                        <td>
+                            <select class="row-input" style="color:${qColor}" onchange="updateData(${rIdx},${tIdx},${sIdx},'lockQ',this.value)">
+                                <option value="" ${slot.lockQ==''?'selected':''}>不限</option>
+                                <option value="Legendary" ${slot.lockQ=='Legendary'?'selected':''}>Legendary</option>
+                                <option value="Epic" ${slot.lockQ=='Epic'?'selected':''}>Epic</option>
+                                <option value="Rare" ${slot.lockQ=='Rare'?'selected':''}>Rare</option>
+                                <option value="Common" ${slot.lockQ=='Common'?'selected':''}>Common</option>
+                            </select>
+                        </td>
                         <td><input type="number" class="row-input" value="${slot.qty}" onchange="updateData(${rIdx},${tIdx},${sIdx},'qty',this.value)"></td>
-                        <td><button class="btn-del" onclick="removeSlot(${rIdx},${tIdx},${sIdx})">×</button></td>`;
+                        <td><button class="btn-del" onclick="removeSlot(${rIdx},${tIdx},${sIdx})">×</button></td>
+                    `;
                     tbody.appendChild(tr);
-                    flatForJson.push({ 房间ID: room.roomId, 交互物ID: target.id, 物品ID: slot.lockId, 品质: slot.lockQ, 数量: slot.qty });
+
+                    jsonOutput.push({ Room: room.roomId, Target: target.id, Item: slot.lockId, Quality: slot.lockQ, Qty: slot.qty });
                 });
             });
         });
-        document.getElementById('jsonOutput').value = JSON.stringify(flatForJson, null, 2);
+
+        document.getElementById('jsonOutput').value = JSON.stringify(jsonOutput, null, 2);
     }
 
-    function exportToExcel() {
-        if (currentIndex < 0) return alert("请先生成配置！");
-        const json = JSON.parse(document.getElementById('jsonOutput').value);
-        if (!json.length) return;
-        
-        // CSV 表头
-        const headers = Object.keys(json[0]);
-        let csvContent = "\ufeff" + headers.join(",") + "\n"; // 添加BOM防止中文乱码
-        
-        // 填充行内容
-        json.forEach(row => {
-            csvContent += headers.map(h => `"${row[h] || ''}"`).join(",") + "\n";
-        });
-
-        // 触发下载
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        link.setAttribute("href", url);
-        link.setAttribute("download", `${configs[currentIndex].name}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
-
-    // 基础功能
     function updateData(rIdx, tIdx, sIdx, key, val) {
+        if (!configs[currentIndex]) return;
         const d = configs[currentIndex].data;
         if (key === 'roomId') d[rIdx].roomId = val;
         else if (key === 'targetId') d[rIdx].targets[tIdx].id = val;
         else d[rIdx].targets[tIdx].slots[sIdx][key] = (key==='qty' ? parseInt(val) : val);
-        renderTable();
+        renderTable(); 
     }
-    function renderTabs() {
-        const c = document.getElementById('tabContainer'); c.innerHTML = '';
-        configs.forEach((conf, idx) => {
-            const tab = document.createElement('div');
-            tab.className = `tab ${idx === currentIndex ? 'active' : ''}`;
-            tab.innerHTML = `${conf.name} <span onclick="event.stopPropagation();configs.splice(${idx},1);currentIndex=configs.length-1;renderTabs();renderTable();">×</span>`;
-            tab.onclick = () => { currentIndex = idx; renderTabs(); renderTable(); };
-            c.appendChild(tab);
-        });
-        document.getElementById('currentConfigName').innerText = configs[currentIndex] ? configs[currentIndex].name : "空";
-    }
-    function addRoom() { configs[currentIndex].data.push({ roomId: "New", targets: [{ id: "200", slots: [{ lockId: "", lockQ: "Common", qty: 1 }] }] }); renderTable(); }
-    function removeSlot(rIdx, tIdx, sIdx) {
+
+    function addRoom() { if(!configs[currentIndex]) return; configs[currentIndex].data.push({ roomId: "New", targets: [{ id: "NEW", slots: [{ lockId: "", lockQ: "Common", qty: 1 }] }] }); renderTable(); }
+    function addTarget(rIdx) { configs[currentIndex].data[rIdx].targets.push({ id: "NEW", slots: [{ lockId: "", lockQ: "Common", qty: 1 }] }); renderTable(); }
+    function addSlot(rIdx, tIdx) { configs[currentIndex].data[rIdx].targets[tIdx].slots.push({ lockId: "", lockQ: "Common", qty: 1 }); renderTable(); }
+    function removeSlot(rIdx, tIdx, sIdx) { 
         configs[currentIndex].data[rIdx].targets[tIdx].slots.splice(sIdx, 1);
-        renderTable();
+        if(configs[currentIndex].data[rIdx].targets[tIdx].slots.length === 0) configs[currentIndex].data[rIdx].targets.splice(tIdx, 1);
+        if(configs[currentIndex].data[rIdx].targets.length === 0) configs[currentIndex].data.splice(rIdx, 1);
+        renderTable(); 
+    }
+
+    function copyJSON() {
+        const area = document.getElementById('jsonOutput');
+        area.select();
+        document.execCommand('copy');
+    }
+
+    // --- 新增：导出 CSV 功能 ---
+    function exportToExcel() {
+        if (currentIndex < 0 || !configs[currentIndex]) return alert("当前没有可导出的数据！");
+        
+        // 构建 CSV 内容，添加 UTF-8 BOM 头部以防止中文乱码
+        let csvContent = "\uFEFF"; 
+        csvContent += "房间 ID,可交互物 ID,物品 ID,品质,数量\n";
+
+        const data = configs[currentIndex].data;
+        data.forEach(room => {
+            room.targets.forEach(target => {
+                target.slots.forEach(slot => {
+                    // 处理字段中可能存在的逗号
+                    const row = [
+                        `"${room.roomId}"`,
+                        `"${target.id}"`,
+                        `"${slot.lockId}"`,
+                        `"${slot.lockQ}"`,
+                        slot.qty
+                    ];
+                    csvContent += row.join(",") + "\n";
+                });
+            });
+        });
+
+        // 创建下载链接
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `${configs[currentIndex].name}_${new Date().getTime()}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
 
     generateNewConfig();
