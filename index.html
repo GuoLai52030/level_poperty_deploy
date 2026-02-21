@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>关卡掉落全参数配置工具</title>
+    <title>关卡掉落配置工作台 - 团队协作版</title>
     <style>
         :root { --bg: #0d0d0d; --card: #1a1a1a; --cyan: #00e5ff; --gold: #ff9f43; --border: #333; --text: #d1d1d1; }
         body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; font-size: 13px; }
@@ -11,8 +11,13 @@
         .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 15px; margin-bottom: 20px; }
         h3 { color: var(--cyan); margin-top: 0; font-size: 0.9rem; border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 12px; }
         
-        textarea { width: 100%; height: 220px; background: #000; color: #00ff41; border: 1px solid var(--border); border-radius: 4px; padding: 10px; font-family: monospace; font-size: 12px; resize: vertical; box-sizing: border-box; }
-        
+        /* 说明文档样式 */
+        .manual { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; background: #111; border: 1px dashed #444; }
+        .manual-sec h4 { color: var(--gold); margin: 0 0 8px 0; font-size: 13px; }
+        .manual-sec ul { padding-left: 18px; margin: 0; color: #aaa; line-height: 1.6; }
+        .manual-sec code { background: #000; color: var(--cyan); padding: 2px 4px; border-radius: 3px; }
+
+        textarea { width: 100%; height: 200px; background: #000; color: #00ff41; border: 1px solid var(--border); border-radius: 4px; padding: 10px; font-family: monospace; font-size: 12px; resize: vertical; box-sizing: border-box; }
         .budget-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .input-group { display: flex; flex-direction: column; }
         .input-group label { font-size: 11px; color: #888; margin-bottom: 2px; }
@@ -21,16 +26,10 @@
         table { width: 100%; border-collapse: collapse; background: #0a0a0a; }
         th, td { border: 1px solid var(--border); padding: 8px; text-align: left; }
         th { background: #222; color: var(--cyan); font-size: 12px; position: sticky; top: 0; }
-
         .row-input { width: 100%; box-sizing: border-box; border: none; background: transparent; color: #fff; font-size: 12px; }
-        .row-input:focus { background: #222; outline: 1px solid var(--cyan); }
         
         .btn-main { background: var(--cyan); color: #000; border: none; padding: 15px; border-radius: 4px; font-weight: bold; cursor: pointer; width: 100%; margin: 15px 0; font-size: 1rem; }
-        .btn-sub { background: #333; color: #ccc; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-right: 5px; }
-        .btn-sub:hover { background: #444; }
-
-        #jsonOutput { background: #000; color: #aaa; height: 150px; }
-        .summary-bar { background: #222; padding: 10px; border-radius: 4px; margin-top: 10px; font-size: 12px; color: var(--gold); }
+        .btn-sub { background: #333; color: #ccc; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; }
     </style>
 </head>
 <body>
@@ -39,12 +38,11 @@
     <div class="left-panel">
         <div class="card">
             <h3>1. 掉落物原始库 (ID, 品质)</h3>
-            <textarea id="poolInput" placeholder="Item_Gold_Small,Common&#10;Item_Gold_Large,Rare&#10;Weapon_Sword_01,Epic&#10;Weapon_Spear_Ex,Legendary&#10;Potion_HP,Common"></textarea>
+            <textarea id="poolInput" placeholder="Item_Gold_Small,Common&#10;Weapon_Sword_01,Epic"></textarea>
         </div>
 
         <div class="card">
-            <h3>2. 随机池总配额 (所有槽位共享)</h3>
-            <p style="font-size:11px; color:#666; margin-bottom:10px;">指除了锁定掉落外，本局额外允许出现的物品品质总数。</p>
+            <h3>2. 随机池总配额</h3>
             <div class="budget-grid">
                 <div class="input-group"><label>Legendary (橙)</label><input type="number" id="b_Legendary" value="1"></div>
                 <div class="input-group"><label>Epic (紫)</label><input type="number" id="b_Epic" value="2"></div>
@@ -63,21 +61,21 @@
     </div>
 
     <div class="right-panel">
-        <div class="card" style="min-height: 600px;">
+        <div class="card">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                 <h3 style="margin:0;">4. 交互物详细掉落槽位配置</h3>
                 <div>
-                    <button class="btn-sub" onclick="addSlot('Chest_General', 1)">+ 加 1 个通用槽位</button>
-                    <button class="btn-sub" onclick="addSlot('Boss_Entity', 3)">+ 加 3 个 Boss 槽位</button>
+                    <button class="btn-sub" onclick="addSlot('Chest_General', 1)">+ 增加 1 个槽位</button>
+                    <button class="btn-sub" onclick="addSlot('Boss_Chest', 3)">+ 增加 3 个槽位</button>
                 </div>
             </div>
             
-            <table>
+            <table style="margin-bottom: 20px;">
                 <thead>
                     <tr>
                         <th width="25%">交互物 ID (Target)</th>
-                        <th width="20%">锁定特定物品 (固定ID)</th>
-                        <th width="20%">锁定品质 (仅随机时生效)</th>
+                        <th width="20%">锁定特定物品 (ID)</th>
+                        <th width="20%">锁定品质 (Quality)</th>
                         <th width="15%">单项数量 (Qty)</th>
                         <th width="10%">操作</th>
                     </tr>
@@ -85,66 +83,61 @@
                 <tbody id="targetBody">
                     <tr class="slot-row">
                         <td><input type="text" class="row-input target-id" value="Chest_Small_01"></td>
-                        <td><input type="text" class="row-input lock-id" placeholder="不填则随机"></td>
-                        <td>
-                            <select class="row-input lock-q">
-                                <option value="">完全随机</option>
-                                <option value="Legendary">Legendary</option>
-                                <option value="Epic">Epic</option>
-                                <option value="Rare">Rare</option>
-                                <option value="Common">Common</option>
-                            </select>
-                        </td>
+                        <td><input type="text" class="row-input lock-id" placeholder="随机"></td>
+                        <td><select class="row-input lock-q"><option value="">完全随机</option><option value="Legendary">Legendary</option><option value="Epic">Epic</option><option value="Rare">Rare</option><option value="Common">Common</option></select></td>
                         <td><input type="number" class="row-input item-qty" value="1"></td>
                         <td><button class="btn-sub" onclick="this.parentElement.parentElement.remove()">删除</button></td>
                     </tr>
                 </tbody>
             </table>
-            
-            <div class="summary-bar" id="summary">
-                当前配置：共计 1 个交互物槽位。
+
+            <div class="card manual">
+                <div class="manual-sec">
+                    <h4>📂 基础数据配置</h4>
+                    <ul>
+                        <li><b>物品库：</b>每行格式 <code>ID,品质</code>。品质必须匹配左侧设定的四个等级。</li>
+                        <li><b>随机配额：</b>除了锁定项，系统还能额外抽取的物品总数上限。</li>
+                    </ul>
+                </div>
+                <div class="manual-sec">
+                    <h4>🎯 核心分配逻辑</h4>
+                    <ul>
+                        <li><b>多重掉落：</b>为同一个 <code>Target ID</code> 添加多行，即可实现一个箱子掉落多件物品。</li>
+                        <li><b>数量(Qty)：</b>指该格物品堆叠数。金币填 <code>500</code>，装备填 <code>1</code>。</li>
+                    </ul>
+                </div>
+                <div class="manual-sec">
+                    <h4>🔒 锁定与随机规则</h4>
+                    <ul>
+                        <li><b>特定ID优先：</b>若填写“锁定ID”，则该槽位固定掉落此物，无视品质设定。</li>
+                        <li><b>品质随机：</b>若选定品质，则从库中对应品质池内随机抽一，并扣除左侧配额。</li>
+                        <li><b>完全随机：</b>若两项均空，则消耗剩余配额进行全随机填充。</li>
+                    </ul>
+                </div>
+                <div class="manual-sec">
+                    <h4>📋 导出与使用</h4>
+                    <ul>
+                        <li>点击 <code>Generate</code> 生成最终分配名单。</li>
+                        <li>JSON 结构包含 <code>target</code>, <code>item_id</code>, <code>quantity</code> 等关键字段，直接对接游戏逻辑。</li>
+                    </ul>
+                </div>
             </div>
-            <p style="font-size:11px; color:#888; margin-top:10px;">
-                💡 <b>Tips:</b><br>
-                - <b>如何配总掉落数？</b> 为同一个 Target ID 添加多行。每一行代表该交互物会掉落的一个“物品格子”。<br>
-                - <b>如何配单个数量？</b> 修改对应行的 Qty。这决定了该格子里物品的堆叠数。
-            </p>
         </div>
     </div>
 </div>
 
 <script>
+    // 逻辑函数与之前保持一致
     function addSlot(defaultId = "", count = 1) {
         for(let i=0; i<count; i++) {
             const tr = document.createElement('tr');
             tr.className = "slot-row";
-            tr.innerHTML = `
-                <td><input type="text" class="row-input target-id" value="${defaultId}"></td>
-                <td><input type="text" class="row-input lock-id" placeholder="不填则随机"></td>
-                <td>
-                    <select class="row-input lock-q">
-                        <option value="">完全随机</option>
-                        <option value="Legendary">Legendary</option>
-                        <option value="Epic">Epic</option>
-                        <option value="Rare">Rare</option>
-                        <option value="Common">Common</option>
-                    </select>
-                </td>
-                <td><input type="number" class="row-input item-qty" value="1"></td>
-                <td><button class="btn-sub" onclick="this.parentElement.parentElement.remove()">删除</button></td>
-            `;
+            tr.innerHTML = `<td><input type="text" class="row-input target-id" value="${defaultId}"></td><td><input type="text" class="row-input lock-id" placeholder="随机"></td><td><select class="row-input lock-q"><option value="">完全随机</option><option value="Legendary">Legendary</option><option value="Epic">Epic</option><option value="Rare">Rare</option><option value="Common">Common</option></select></td><td><input type="number" class="row-input item-qty" value="1"></td><td><button class="btn-sub" onclick="this.parentElement.parentElement.remove()">删除</button></td>`;
             document.getElementById('targetBody').appendChild(tr);
         }
-        updateSummary();
-    }
-
-    function updateSummary() {
-        const count = document.querySelectorAll('.slot-row').length;
-        document.getElementById('summary').innerText = `当前配置：共计 ${count} 个掉落槽位已就绪。`;
     }
 
     function generate() {
-        // 1. 解析库
         const poolRaw = document.getElementById('poolInput').value.trim().split('\n');
         const pool = { Legendary: [], Epic: [], Rare: [], Common: [] };
         poolRaw.forEach(line => {
@@ -152,7 +145,6 @@
             if(pool[q]) pool[q].push(id);
         });
 
-        // 2. 预算
         let budget = {
             Legendary: parseInt(document.getElementById('b_Legendary').value) || 0,
             Epic: parseInt(document.getElementById('b_Epic').value) || 0,
@@ -164,7 +156,6 @@
         const finalDrops = [];
         const randomSlots = [];
 
-        // 3. 第一次遍历：处理固定逻辑
         rows.forEach(row => {
             const tId = row.querySelector('.target-id').value;
             const lId = row.querySelector('.lock-id').value;
@@ -172,22 +163,18 @@
             const qty = parseInt(row.querySelector('.item-qty').value) || 1;
 
             if (lId) {
-                // 固定 ID
-                finalDrops.push({ target: tId, item_id: lId, quantity: qty, note: "Fixed ID" });
+                finalDrops.push({ target: tId, item_id: lId, quantity: qty, note: "Locked ID" });
             } else if (lQ) {
-                // 固定品质随机
                 if(pool[lQ].length > 0) {
                     const item = pool[lQ][Math.floor(Math.random() * pool[lQ].length)];
-                    finalDrops.push({ target: tId, item_id: item, quality: lQ, quantity: qty, note: "Fixed Quality" });
+                    finalDrops.push({ target: tId, item_id: item, quality: lQ, quantity: qty, note: "Locked Quality" });
                     budget[lQ] = Math.max(0, budget[lQ] - 1);
                 }
             } else {
-                // 完全随机分配
                 randomSlots.push({ target: tId, quantity: qty });
             }
         });
 
-        // 4. 第二次遍历：填充剩余随机预算
         let masterRandomPool = [];
         for (const q in budget) {
             for(let i=0; i<budget[q]; i++) {
@@ -200,23 +187,18 @@
         masterRandomPool.sort(() => 0.5 - Math.random());
 
         randomSlots.forEach(slot => {
-            const picked = masterRandomPool.shift() || { id: "Empty_Trash", q: "Common" };
-            finalDrops.push({ target: slot.target, item_id: picked.id, quality: picked.q, quantity: slot.quantity, note: "Random Budget" });
+            const picked = masterRandomPool.shift() || { id: "NONE", q: "Common" };
+            finalDrops.push({ target: slot.target, item_id: picked.id, quality: picked.q, quantity: slot.quantity, note: "Random" });
         });
 
         document.getElementById('jsonOutput').value = JSON.stringify(finalDrops, null, 2);
-        alert("配置表生成成功！");
     }
 
     function copyJson() {
         const copyText = document.getElementById("jsonOutput");
         copyText.select();
         document.execCommand("copy");
-        alert("已复制到剪贴板");
     }
-
-    // 初始化监听
-    document.addEventListener('input', updateSummary);
 </script>
 </body>
 </html>
